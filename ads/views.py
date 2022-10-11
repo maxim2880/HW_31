@@ -9,8 +9,12 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import DetailView, ListView, CreateView, UpdateView, DeleteView
+from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from ads.models import Categories, Ads, User, Location
+from ads.serializers import UserDetailSerializer, UserListSerializer, UserCreateSerializer, UserUpdateSerializer, \
+    UserDestroySerializer, LocationSerializer, AdsListSerializer
 
 
 def index(request):
@@ -97,38 +101,60 @@ class CategoryDeleteView(DeleteView):
 
 # Представления объявлений
 
-class AdsListView(ListView):
-    model = Ads
+class AdsListView(ListAPIView):
+    queryset = Ads.objects.order_by("-price").all()
+    serializer_class = AdsListSerializer
 
     def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
+        categories = request.GET.getlist('cat', [])
+        if categories:
+            self.queryset = self.queryset.filter(category_id__in=categories)
+        text = request.GET.get('text')
+        if text:
+            self.queryset = self.queryset.filter(name__icontains=text)
+        location = request.GET.get('location')
+        if location:
+            self.queryset = self.queryset.filter(author__location__name__icontains=location)
+        price_from = request.GET.get('price_from')
+        price_to = request.GET.get('price_to')
+        if price_from:
+            self.queryset = self.queryset.filter(price__gte=price_from)
+        if price_to:
+            self.queryset = self.queryset.filter(price__lte=price_to)
+        return super().get(self, *args, **kwargs)
 
-        # Пагинация
 
-        paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
-        page_number = request.GET.get("page")
-        page_obj = paginator.get_page(page_number)
-
-        self.object_list = self.object_list.select_related("user").order_by("-price")
-
-        advertises = []
-        for advertise in page_obj:
-            advertises.append({
-                "id": advertise.id,
-                "name": advertise.name,
-                "author": advertise.author_id,
-                "price": advertise.price,
-                "description": advertise.description,
-                "is_published": advertise.is_published,
-                "image": advertise.image.url,
-                "category": advertise.category_id
-            })
-        response = {
-            "items": advertises,
-            "num_pages": paginator.num_pages,
-            "total": paginator.count
-        }
-        return JsonResponse(response, safe=False, status=200)
+    # model = Ads
+    #
+    # def get(self, request, *args, **kwargs):
+    #     super().get(request, *args, **kwargs)
+    #
+    #     # Пагинация
+    #
+    #     paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
+    #     page_number = request.GET.get("page")
+    #     page_obj = paginator.get_page(page_number)
+    #
+    #     self.object_list = self.object_list.select_related("user").order_by("-price")
+    #
+    #     advertises = []
+    #     for advertise in page_obj:
+    #         advertises.append({
+    #             "id": advertise.id,
+    #             "name": advertise.name,
+    #             "author": advertise.author_id,
+    #             "price": advertise.price,
+    #             "description": advertise.description,
+    #             "is_published": advertise.is_published,
+    #             "image": advertise.image.url,
+    #             "category": advertise.category_id
+    #         })
+    #     response = {
+    #         "items": advertises,
+    #         "num_pages": paginator.num_pages,
+    #         "total": paginator.count
+    #     }
+    #     return JsonResponse(response, safe=False, status=200)
 
 
 class AdsDetailView(DetailView):
@@ -246,139 +272,31 @@ class AdsImageView(UpdateView):
         })
 
 
-# Предстваления для пользователей и локаций
+# Предстваления для пользователей
 
-class UserListView(ListView):
-    model = User
-
-    def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
-
-        # Пагинация
-
-        paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
-        page_number = request.GET.get("page")
-        page_obj = paginator.get_page(page_number)
-
-        users = []
-        for user in page_obj:
-            users.append({
-                "id": user.id,
-                "username": user.username,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "role": user.role,
-                "age": user.age,
-                "location": list(map(str, user.location.all()))
-            })
-
-        response = {
-            "items": users,
-            "num_pages": paginator.num_pages,
-            "total": paginator.count
-        }
-        return JsonResponse(response, safe=False, status=200)
+class UserListView(ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserListSerializer
 
 
-class UserDetailView(DetailView):
-    model = User
-
-    def get(self, request, *args, **kwargs):
-        user = self.get_object()
-
-        return JsonResponse({
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role,
-            "age": user.age,
-            "location": list(map(str, user.location.all()))
-        })
+class UserDetailView(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserDetailSerializer
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class UserCreateView(CreateView):
-    model = User
-    fields = ["username", "first_name", "last_name", "role", "age", "password", "location"]
-
-    def post(self, request, *args, **kwargs):
-        # super().post(request, *args, **kwargs)
-
-        user_data = json.loads(request.body)
-
-        user = User.objects.create(
-            username=user_data["username"],
-            first_name=user_data["first_name"],
-            last_name=user_data["last_name"],
-            password=user_data["password"],
-            role=user_data["role"],
-            age=user_data["age"],
-        )
-
-        for location in user_data["location"]:
-            location_obj, created = Location.objects.get_or_create(name=location, defaults={
-                "lat": "55",
-                "lng": "55"
-            })
-            user.location.add(location_obj)
-        user.save()
-
-        return JsonResponse({
-            "id": user.id,
-            "username": user.username,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role,
-            "age": user.age,
-            "location": list(user.location.all().values_list("name", flat=True))
-        })
+class UserCreateView(CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserCreateSerializer
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class UserUpdateView(UpdateView):
-    model = User
-    fields = ["username", "first_name", "last_name", "role", "age", "password", "location"]
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-        user_data = json.loads(request.body)
-
-        self.object.username = user_data["username"]
-        self.object.first_name = user_data["first_name"]
-        self.object.last_name = user_data["last_name"]
-        self.object.password = user_data["password"]
-        self.object.role = user_data["role"]
-        self.object.age = user_data["age"]
-
-        for location in user_data["location"]:
-            location_obj, created = Location.objects.get_or_create(name=location, defaults={
-                "lat": "55",
-                "lng": "55"
-            })
-            self.object.location.add(location_obj)
-        self.object.save()
-
-        return JsonResponse({
-            "id": self.object.id,
-            "username": self.object.username,
-            "first_name": self.object.first_name,
-            "last_name": self.object.last_name,
-            "role": self.object.role,
-            "age": self.object.age,
-            "location": list(self.object.location.all().values_list("name", flat=True))
-        })
+class UserUpdateView(UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserUpdateSerializer
 
 
-@method_decorator(csrf_exempt, name="dispatch")
-class UserDeleteView(DeleteView):
-    model = User
-    success_url = "/"
-
-    def delete(self, request, *args, **kwargs):
-        super().delete(request, *args, **kwargs)
-
-        return JsonResponse({"status": "ok"}, status=200)
+class UserDeleteView(DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserDestroySerializer
 
 
 class UserAdsDetailView(View):
@@ -405,3 +323,34 @@ class UserAdsDetailView(View):
         }
 
         return JsonResponse(response)
+
+
+# Представления и ViewSet для локаций
+
+class LocationViewSet(ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+
+# class LocationListView(ListAPIView):
+#     queryset = Location.objects.all()
+#     serializer_class = LocationListSerializer
+#
+#
+# class LocationDetailView(RetrieveAPIView):
+#     queryset = Location.objects.all()
+#     serializer_class = LocationDetailSerializer
+#
+#
+# class LocationCreateView(CreateAPIView):
+#     queryset = Location.objects.all()
+#     serializer_class = LocationCreateSerializer
+#
+#
+# class LocationUpdateView(UpdateAPIView):
+#     queryset = Location.objects.all()
+#     serializer_class = LocationUpdateSerializer
+#
+#
+# class LocationDeleteView(DestroyAPIView):
+#     queryset = Location.objects.all()
+#     serializer_class = LocationDestroySerializer

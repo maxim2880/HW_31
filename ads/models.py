@@ -4,7 +4,7 @@ from django.db import models
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=50, default=0)
+    name = models.CharField(max_length=50)
 
     class Meta:
         verbose_name = "Категория"
@@ -15,7 +15,7 @@ class Categories(models.Model):
 
 
 class Location(models.Model):
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, unique=True)
     lat = models.FloatField(max_length=20)
     lng = models.FloatField(max_length=20)
 
