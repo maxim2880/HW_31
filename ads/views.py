@@ -14,7 +14,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView,
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from ads.models import Categories, Ads, Selection
+from ads.models import Categories, Ad, Selection
 from ads.permissions import IsOwnerAdOrStaff, IsOwnerSelection
 from users.models import User
 from users.serializers import UserDetailSerializer, UserListSerializer, UserCreateSerializer, UserUpdateSerializer, \
@@ -110,7 +110,7 @@ class CategoryDeleteView(DeleteView):
 # Представления объявлений
 
 class AdsListView(ListAPIView):
-    queryset = Ads.objects.order_by("-price").all()
+    queryset = Ad.objects.order_by("-price").all()
     serializer_class = AdsListSerializer
 
     def get(self, request, *args, **kwargs):
@@ -133,7 +133,7 @@ class AdsListView(ListAPIView):
 
 
 # class AdsDetailView(DetailView):
-#     model = Ads
+#     model = Ad
 #
 #     def get(self, request, *args, **kwargs):
 #         advertise = self.get_object()
@@ -151,12 +151,12 @@ class AdsListView(ListAPIView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AdsCreateView(CreateView):
-    model = Ads
+    model = Ad
     fields = ["name", "author", "price", "description", "is_published", "image", "category"]
 
     def post(self, request, *args, **kwargs):
         adv_data = json.loads(request.body)
-        advertise = Ads.objects.create(
+        advertise = Ad.objects.create(
             name=adv_data["name"],
 
             price=adv_data["price"],
@@ -182,13 +182,13 @@ class AdsCreateView(CreateView):
 
 
 class AdsUpdateView(UpdateAPIView):
-    queryset = Ads.objects.all()
+    queryset = Ad.objects.all()
     permission_classes = [IsAuthenticated, IsOwnerAdOrStaff]
     serializer_class = AdsUpdateSerializer
 
 
 class AdsDeleteView(DestroyAPIView):
-    queryset = Ads.objects.all()
+    queryset = Ad.objects.all()
     permission_classes = [IsAuthenticated, IsOwnerAdOrStaff]
     serializer_class = AdsUpdateSerializer
 
@@ -197,7 +197,7 @@ class AdsDeleteView(DestroyAPIView):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AdsImageView(UpdateView):
-    model = Ads
+    model = Ad
     field = ["name", "author", "price", "description", "is_published", "image", "category"]
 
     def post(self, request, *args, **kwargs):
@@ -219,7 +219,7 @@ class AdsImageView(UpdateView):
 
 
 class AdsDetailView(RetrieveAPIView):
-    queryset = Ads.objects.all()
+    queryset = Ad.objects.all()
     serializer_class = AdsDetailSerializer
     permission_classes = [IsAuthenticated]
 

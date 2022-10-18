@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ads.models import Ads, Categories, Selection
+from ads.models import Ad, Categories, Selection
 from users.models import User
 
 
@@ -9,7 +9,7 @@ class AdsListSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(slug_field="name", queryset=User.objects.all())
 
     class Meta:
-        model = Ads
+        model = Ad
         exclude = ['id']
 
 
@@ -18,13 +18,13 @@ class AdsDetailSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(slug_field="name", queryset=User.objects.all())
 
     class Meta:
-        model = Ads
+        model = Ad
         fields = '__all__'
 
 class AdsUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Ads
+        model = Ad
         fields = '__all__'
 
 

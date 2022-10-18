@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 import json
-from ads.models import Ads, Categories
+from ads.models import Ad, Categories
 
 
 class Command(BaseCommand):
@@ -17,7 +17,7 @@ class Command(BaseCommand):
             adv_data = json.load(f)
 
         for i in adv_data:
-            advertise = Ads()
+            advertise = Ad()
             advertise.name = adv_data["name"]
             advertise.author = adv_data["author"]
             advertise.price = adv_data["price"]

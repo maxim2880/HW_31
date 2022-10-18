@@ -16,7 +16,7 @@ class Categories(models.Model):
         return self.name
 
 
-class Ads(models.Model):
+class Ad(models.Model):
     name = models.CharField(max_length=100)
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ads')
     price = models.IntegerField()
@@ -36,7 +36,7 @@ class Ads(models.Model):
 class Selection(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='selections')
     name = models.CharField(max_length=100, unique=True)
-    items = models.ManyToManyField(Ads)
+    items = models.ManyToManyField(Ad)
 
     class Meta:
         verbose_name = "Подборка"
