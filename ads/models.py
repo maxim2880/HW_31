@@ -1,12 +1,14 @@
 import json
 
 from django.db import models
+from django.core.validators import MinLengthValidator
 
 from users.models import User
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=50, unique=True)
+    slug = models.CharField(verbose_name="Слаг", validators=[MinLengthValidator(5)], max_length=10, unique=True )
 
     class Meta:
         verbose_name = "Категория"
@@ -17,9 +19,9 @@ class Categories(models.Model):
 
 
 class Ad(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=50, unique=True, validators=[MinLengthValidator(10)])
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ads')
-    price = models.IntegerField()
+    price = models.PositiveIntegerField()
     description = models.TextField(null=True)
     image = models.ImageField(upload_to='images')
     is_published = models.BooleanField(default=False)

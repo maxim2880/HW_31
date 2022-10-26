@@ -1,6 +1,18 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 
+from datetime import timedelta, date
+from dateutil.relativedelta import relativedelta
+
+USER_MIN_AGE = 9
+
+
+def birth_date_validator(value):
+    diff_years = relativedelta(date.today(), value).years()
+    if diff_years < USER_MIN_AGE:
+        raise ValidationError('User is underage')
+    return value
 
 class Location(models.Model):
     name = models.CharField(max_length=150, unique=True)
@@ -45,9 +57,11 @@ class UserRoles:
 
 
 class User(AbstractUser):
-    role = models.CharField(max_length=50)
-    age = models.IntegerField(null=True)
+    role = models.CharField(max_length=12, choices=UserRoles.choices, default='member')
+    age = models.PositiveSmallIntegerField(null=True)
     location = models.ManyToManyField(Location)
+    birth_date = models.DateField(validators=[birth_date_validator])
+    email = models.EmailField(unique=True)
 
     class Meta:
         verbose_name = "Пользователь"

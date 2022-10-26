@@ -1,8 +1,13 @@
 from rest_framework import serializers
 
-
 # Сериализаторы для пользователей
 from users.models import User, Location
+
+
+def email_validator(value):
+    if value.endswith('rambler.ru'):
+        raise serializers.ValidationError(f'Cant register from domain {value}')
+    return value
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -36,6 +41,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         queryset=Location.objects.all(),
         slug_field="name"
     )
+    email = serializers.EmailField(validators=[email_validator])
 
     class Meta:
         model = User

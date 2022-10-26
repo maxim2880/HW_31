@@ -20,7 +20,7 @@ from users.models import User
 from users.serializers import UserDetailSerializer, UserListSerializer, UserCreateSerializer, UserUpdateSerializer, \
     UserDestroySerializer, LocationSerializer
 from ads.serializers import AdsListSerializer, AdsDetailSerializer, SelectionListSerializer, SelectionDetailSerializer, \
-    SelectionCreateSerializer, AdsUpdateSerializer
+    SelectionCreateSerializer, AdsUpdateSerializer, AdsCreateSerializer
 
 
 @api_view(['POST'])
@@ -113,23 +113,23 @@ class AdsListView(ListAPIView):
     queryset = Ad.objects.order_by("-price").all()
     serializer_class = AdsListSerializer
 
-    def get(self, request, *args, **kwargs):
-        categories = request.GET.getlist('cat', [])
-        if categories:
-            self.queryset = self.queryset.filter(category_id__in=categories)
-        text = request.GET.get('text')
-        if text:
-            self.queryset = self.queryset.filter(name__icontains=text)
-        location = request.GET.get('location')
-        if location:
-            self.queryset = self.queryset.filter(author__location__name__icontains=location)
-        price_from = request.GET.get('price_from')
-        price_to = request.GET.get('price_to')
-        if price_from:
-            self.queryset = self.queryset.filter(price__gte=price_from)
-        if price_to:
-            self.queryset = self.queryset.filter(price__lte=price_to)
-        return super().get(self, *args, **kwargs)
+    # def get(self, request, *args, **kwargs):
+    #     categories = request.GET.getlist('cat', [])
+    #     if categories:
+    #         self.queryset = self.queryset.filter(category_id__in=categories)
+    #     text = request.GET.get('text')
+    #     if text:
+    #         self.queryset = self.queryset.filter(name__icontains=text)
+    #     location = request.GET.get('location')
+    #     if location:
+    #         self.queryset = self.queryset.filter(author__location__name__icontains=location)
+    #     price_from = request.GET.get('price_from')
+    #     price_to = request.GET.get('price_to')
+    #     if price_from:
+    #         self.queryset = self.queryset.filter(price__gte=price_from)
+    #     if price_to:
+    #         self.queryset = self.queryset.filter(price__lte=price_to)
+    #     return super().get(self, *args, **kwargs)
 
 
 # class AdsDetailView(DetailView):
@@ -149,36 +149,10 @@ class AdsListView(ListAPIView):
 #             "category": advertise.category_id
 #         })
 
-@method_decorator(csrf_exempt, name="dispatch")
-class AdsCreateView(CreateView):
+class AdsCreateView(CreateAPIView):
     model = Ad
-    fields = ["name", "author", "price", "description", "is_published", "image", "category"]
+    serializer_class = AdsCreateSerializer
 
-    def post(self, request, *args, **kwargs):
-        adv_data = json.loads(request.body)
-        advertise = Ad.objects.create(
-            name=adv_data["name"],
-
-            price=adv_data["price"],
-            description=adv_data["description"],
-            is_published=adv_data["is_published"],
-            image=adv_data["image"],
-            category_id=adv_data["category_id"]
-        )
-
-        advertise.author_id = get_object_or_404(User, pk=adv_data["author_id"])
-        advertise.save()
-
-        return JsonResponse({
-            "id": advertise.id,
-            "name": advertise.name,
-            "author": advertise.author_id,
-            "price": advertise.price,
-            "description": advertise.description,
-            "is_published": advertise.is_published,
-            "image": advertise.image.url if advertise.image else None,
-            "category": advertise.category_id
-        })
 
 
 class AdsUpdateView(UpdateAPIView):
