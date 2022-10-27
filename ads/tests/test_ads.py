@@ -32,7 +32,7 @@ def test_list_ads(api_client, ad):
 
 @pytest.mark.django_db
 def test_get_ad_by_id(api_client, ad):
-    url = reverse('ad_detail', kwargs={'pk', ad.id})
+    url = reverse('ad_detail', kwargs={'pk': ad.id})
     res = api_client.get(url)
     assert res.status_code == status.HTTP_200_OK
-    assert res.json['id'] == ad.id
+    assert res.json()['id'] == ad.id
